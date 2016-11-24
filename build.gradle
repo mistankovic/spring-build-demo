@@ -1,18 +1,21 @@
 buildscript {
     ext {
         springBootVersion = '1.4.2.RELEASE'
+        nebulaOspackageVersion = '4.1.0'
     }
     repositories {
         mavenCentral()
     }
     dependencies {
         classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath "com.netflix.nebula:gradle-ospackage-plugin:${nebulaOspackageVersion}"
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'nebula.ospackage'
 
 jar {
     baseName = 'spring-build-demo'
@@ -31,3 +34,29 @@ dependencies {
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 }
 
+buildRpm {
+    packageName = project.name
+    os = LINUX
+    release = '0'
+
+    def jenkinsBuildNum = System.getenv('BUILD_NUMBER')
+    logger.info("Jenkins build number : '{}'", jenkinsBuildNum)
+    version = jenkinsBuildNum ?: '1.0'
+
+    preInstall new File(projectDir, "rpm/preinstall.sh")
+    postInstall new File(projectDir, "rpm/postinstall.sh")
+    preUninstall new File(projectDir, "rpm/preuninstall.sh")
+
+    from(new File(projectDir, "build/libs/${packageName}.jar")) {
+        into "/usr/share/${packageName}"
+        fileMode 0644
+    }
+
+    from(new File(projectDir, "rpm/service")) {
+        into "/etc/systemd/system"
+        fileMode 0644
+        addParentDirs = false
+    }
+}
+
+buildRpm.dependsOn build

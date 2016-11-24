@@ -1,0 +1,11 @@
+[Unit]
+Description=Spring Boot Demo App
+After=syslog.target
+
+[Service]
+ExecStart=/usr/bin/java -jar /usr/share/spring-build-demo/spring-build-demo.jar --spring.config.location=/etc/spring-build-demo/application.properties
+
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
